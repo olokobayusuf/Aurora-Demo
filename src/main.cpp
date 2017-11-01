@@ -1,4 +1,7 @@
 #include <iostream>
+#include <OpenGL/gl.h>
+#include <OpenGL/glu.h>
+#include <GLUT/glut.h>
 
 using namespace std;
 

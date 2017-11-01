@@ -12,7 +12,7 @@ SRCEXT := cpp
 SOURCES := $(shell find $(SRCDIR) -type f -name "*.$(SRCEXT)")
 OBJECTS := $(patsubst $(SRCDIR)/%,$(BUILDDIR)/%,$(SOURCES:.$(SRCEXT)=.o))
 CFLAGS := -g -Wall -std=c++14
-LIB := -L $(LIBDIR)
+LIB := -L $(LIBDIR) -framework OpenGL
 INC := -I include
 
 $(TARGET): $(OBJECTS)
