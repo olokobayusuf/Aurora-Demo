@@ -1,6 +1,11 @@
-# C++ Project Template for VSCode
+# Aurora Realtime Path-tracing Demo
+*INCOMPLETE*
 
-This is a minimal C++ project template for Visual Studio Code. It is 
-compatible with OSX, but can easily be used on Windows and Linux. This depends on G++ that is bundled with Xcode.
+## Architecture
+*INCOMPLETE*
 
-Built by Yusuf Olokoba
+## Setup Instructions
+*INCOMPLETE*
+
+## Credits
+*INCOMPLETE*
