@@ -1,0 +1,8 @@
+# Ignore the build and lib dirs
+build/*
+
+# Ignore Mac specific files
+.DS_Store
+
+# VS Code
+.vscode/*
