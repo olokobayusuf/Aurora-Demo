@@ -1,8 +1,14 @@
-#include <iostream>
+/*
+*   Aurora Demo
+*   CS 77 - 17F
+*/
 
-using namespace std;
+#pragma once
 
-typedef unsigned (*TestCase) ();
+#include <stdio>
+#include <stdlib>
+
+typedef int (*TestCase) ();
 
 #pragma mark --Test Cases--
 
