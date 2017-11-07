@@ -1,12 +1,12 @@
-CC := g++
+CC := gcc
 SRCDIR := .
 TARGET := ../bin/test
 
-SRCEXT := cpp
+SRCEXT := c
 SOURCES := $(shell find $(SRCDIR) -type f -name "*.$(SRCEXT)")
-CFLAGS := -g -Wall -std=c++0x
+CFLAGS := -g -Wall -std=c11
 LIB :=
-INC := -include test.hpp
+INC := 
 
 run: $(TARGET)
 	@$(TARGET)

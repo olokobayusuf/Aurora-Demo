@@ -1,17 +1,16 @@
 # Implemented from http://hiltmon.com/blog/2013/07/03/a-simple-c-plus-plus-project-structure/
  
-CC := g++ # This is the main compiler
-# CC := clang --analyze # and comment out the linker last line for sanity
+CC := gcc # This is the main compiler
 SRCDIR := src
 BUILDDIR := build
 LIBDIR := lib
 TESTDIR := test
 TARGET := bin/aurora
  
-SRCEXT := cpp
+SRCEXT := c
 SOURCES := $(shell find $(SRCDIR) -type f -name "*.$(SRCEXT)")
 OBJECTS := $(patsubst $(SRCDIR)/%,$(BUILDDIR)/%,$(SOURCES:.$(SRCEXT)=.o))
-CFLAGS := -g -Wall -std=c++14
+CFLAGS := -g -Wall -std=c11
 LIB := -L $(LIBDIR) -framework OpenGL
 INC := -I include
 
