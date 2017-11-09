@@ -43,7 +43,7 @@ int main (int argc, char* argv[]) {
 
 void render () {
     // Clear to black
-    // Draw a fullscreen quad
+    // Draw a fullscreen quad (use immediate mode functions, glBegin/glEnd)
     // Swap buffers
 
     glClearColor(1.f, 0.1f, 0.2f, 1.f);
