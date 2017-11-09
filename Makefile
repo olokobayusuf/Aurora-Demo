@@ -5,13 +5,13 @@ SRCDIR := src
 BUILDDIR := build
 LIBDIR := lib
 TESTDIR := test
-TARGET := bin/aurora
+TARGET := bin/Aurora
  
 SRCEXT := c
 SOURCES := $(shell find $(SRCDIR) -type f -name "*.$(SRCEXT)")
 OBJECTS := $(patsubst $(SRCDIR)/%,$(BUILDDIR)/%,$(SOURCES:.$(SRCEXT)=.o))
-CFLAGS := -g -Wall -std=c11
-LIB := -L $(LIBDIR) -framework OpenGL
+CFLAGS := -g -Wall -std=c11 -Wno-deprecated-declarations
+LIB := -L $(LIBDIR) -framework OpenGL -framework GLUT
 INC := -I include
 
 $(TARGET): $(OBJECTS)
