@@ -5,13 +5,22 @@ SRCDIR := src
 BUILDDIR := build
 LIBDIR := lib
 TESTDIR := test
-TARGET := bin/Aurora
  
 SRCEXT := c
 SOURCES := $(shell find $(SRCDIR) -type f -name "*.$(SRCEXT)")
 OBJECTS := $(patsubst $(SRCDIR)/%,$(BUILDDIR)/%,$(SOURCES:.$(SRCEXT)=.o))
 CFLAGS := -g -Wall -std=c11 -Wno-deprecated-declarations
+
+# Get the current platform, and based on that, use different library search paths
+UNAME := $(shell uname)
+ifeq ($(UNAME), CYGWIN_NT-6.1)
+LIB := -L $(LIBDIR) -lopengl32 -lglut64
+TARGET := bin/Aurora.exe
+else
 LIB := -L $(LIBDIR) -framework OpenGL -framework GLUT
+TARGET := bin/Aurora
+endif
+
 INC := -I include
 
 $(TARGET): $(OBJECTS)
