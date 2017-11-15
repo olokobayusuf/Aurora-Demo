@@ -3,16 +3,23 @@
 CC := gcc # This is the main compiler
 SRCDIR := src
 BUILDDIR := build
-LIBDIR := lib
-TESTDIR := test
-TARGET := bin/aurora
  
 SRCEXT := c
 SOURCES := $(shell find $(SRCDIR) -type f -name "*.$(SRCEXT)")
 OBJECTS := $(patsubst $(SRCDIR)/%,$(BUILDDIR)/%,$(SOURCES:.$(SRCEXT)=.o))
-CFLAGS := -g -Wall -std=c11
-LIB := -L $(LIBDIR) -framework OpenGL
-INC := -I include
+CFLAGS := -g -Wall -std=c11 -Wno-deprecated-declarations
+
+# Get the current platform, and based on that, use different library search paths
+UNAME := $(shell uname)
+ifeq ($(UNAME), CYGWIN_NT-6.1)
+LIB := -lopengl32 -lglut64
+TARGET := bin/Aurora.exe
+else
+LIB := -framework OpenGL -framework GLUT
+TARGET := bin/Aurora
+endif
+
+INC := 
 
 $(TARGET): $(OBJECTS)
 	@echo "Linking..."
@@ -28,10 +35,5 @@ $(BUILDDIR)/%.o: $(SRCDIR)/%.$(SRCEXT)
 clean:
 	@echo "Cleaning..."; 
 	@echo " $(RM) -r $(BUILDDIR) $(TARGET)"; $(RM) -r $(BUILDDIR) $(TARGET)
-	@cd $(TESTDIR); make clean
 
-# Tests
-test:
-	@cd $(TESTDIR); make
-
-.PHONY: clean test
+.PHONY: clean
