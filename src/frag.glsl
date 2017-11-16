@@ -25,6 +25,7 @@ struct Camera {
     float fov;
 };
 
+#define M_PI 3.1415926535897932384626433832795
 #define SCENE_SIZE 2
 
 const Sphere scene[SCENE_SIZE] = Sphere[] (
@@ -54,7 +55,7 @@ varying vec2 uv;
 */
 void main () {
     // Create a camera
-    Camera camera = Camera(mat4(1.0), 1.0);
+    Camera camera = Camera(mat4(1.0), 60);
     // Create a ray from the `uv` coordinates
     Ray ray = generateRay(uv, camera);
     // Set the color
@@ -117,19 +118,12 @@ bool intersect (inout Ray ray, const Sphere sphere) { // INCOMPLETE
     return true;
 }
 
-Ray generateRay (const vec2 uv, const Camera camera) { // INCOMPLETE
+Ray generateRay (const vec2 uv, const Camera camera) {
+    float planeZ = 0.5 / tan(camera.fov * M_PI / 360.0);
     vec3 position = camera.transform[3].xyz;
-<<<<<<< HEAD
-    vec3 planePoint = vec3(uv.x - 0.5, uv.y - 0.5, camera.fov);
-    vec3 direction = planePoint - position;
-=======
-    vec3 planePoint = vec3(uv.x - 0.5, uv.y - 0.5, -camera.fov);
-    vec4 planePoint4v = vec4(planePoint, 1.0); //transform vec3 to vec4
-    
-    vec4 transformedVec = camera.transform * planePoint4v;
-    vec3 outPoint = transformedVec.xyz;
-    vec3 direction = outPoint - position;
->>>>>>> 8a20701bb772d8dc260ba7ab92272832093e77e9
+    vec3 planePoint = vec3(uv.x - 0.5, uv.y - 0.5, planeZ);    
+    vec4 worldPoint = camera.transform * vec4(planePoint, 1.0);
+    vec3 direction = worldPoint.xyz - position;
     return Ray(position, direction, vec2(1e-5, 1e+5), 0, vec3(0.0));
 }
 #pragma endregion
