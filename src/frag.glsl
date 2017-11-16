@@ -25,7 +25,9 @@ struct Camera {
     float fov;
 };
 
-const Sphere scene[2] = Sphere[] (
+#define SCENE_SIZE 2
+
+const Sphere scene[SCENE_SIZE] = Sphere[] (
     Sphere(
         vec3(0.0, 0.0, 0.0),
         4.0
@@ -40,8 +42,10 @@ const Sphere scene[2] = Sphere[] (
 
 #pragma region --Top level--
 
+vec3 radiance (Ray ray);
+vec3 shade (const Ray ray);
+bool intersect (inout Ray ray, const Sphere sphere);
 Ray generateRay (const vec2 uv, const Camera camera);
-vec3 radiance (const Ray ray);
 varying vec2 uv;
 
 /**
@@ -63,8 +67,16 @@ void main () {
 * If there was no intersection, return the background color.
 * If there was, call `shade` and return the color.
 */
-vec3 radiance (const Ray ray) { // INCOMPLETE
-    return normalize(vec3(ray.direction.x, ray.direction.y, 0.0));
+vec3 radiance (Ray ray) { // INCOMPLETE
+    vec3 color = vec3(0.0);
+    for (int i = 0; i < SCENE_SIZE; i++) {
+        Sphere sphere = scene[i];
+        if (intersect(ray, sphere)) {
+            color = vec3(1.0);
+            break;
+        }
+    }
+    return color;
 }
 
 /**
