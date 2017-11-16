@@ -46,6 +46,7 @@ int main (int argc, char* argv[]) {
     if (!load_shaders(&program)) return EXIT_FAILURE;
     // Start running
     glUseProgram(program);
+    glUniform2f(glGetUniformLocation(program, "WindowSize"), screenWidth, screenHeight); // Set window size
     glMatrixMode(GL_MODELVIEW);
     glutMainLoop(); // Blocks on render loop
     return EXIT_SUCCESS;

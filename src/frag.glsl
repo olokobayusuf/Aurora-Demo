@@ -47,6 +47,8 @@ vec3 radiance (Ray ray);
 vec3 shade (const Ray ray);
 bool intersect (inout Ray ray, const Sphere sphere);
 Ray generateRay (const vec2 uv, const Camera camera);
+
+uniform vec2 WindowSize;
 varying vec2 uv;
 
 /**
@@ -93,7 +95,7 @@ vec3 shade (const Ray ray) { // INCOMPLETE
 /**
 * Ray-sphere intersection.
 */
-bool intersect (inout Ray ray, const Sphere sphere) { // INCOMPLETE
+bool intersect (inout Ray ray, const Sphere sphere) {
     vec3 o = ray.origin;
     vec3 d = normalize(ray.direction);
     vec3 c = sphere.position;
@@ -113,6 +115,7 @@ bool intersect (inout Ray ray, const Sphere sphere) { // INCOMPLETE
     vec3 its = o + d * t;
     // Check that we're in range
     if (t < ray.range.x ||  t > ray.range.y) return false;
+    // Set ray params
     ray.intersectionPoint = t;
     ray.intersectionNormal = normalize(its - c);
     return true;
@@ -121,7 +124,7 @@ bool intersect (inout Ray ray, const Sphere sphere) { // INCOMPLETE
 Ray generateRay (const vec2 uv, const Camera camera) {
     float planeZ = 0.5 / tan(camera.fov * M_PI / 360.0);
     vec3 position = camera.transform[3].xyz;
-    vec3 planePoint = vec3(uv.x - 0.5, uv.y - 0.5, planeZ);    
+    vec3 planePoint = vec3((uv.x - 0.5) * WindowSize.x / WindowSize.y, uv.y - 0.5, planeZ);    
     vec4 worldPoint = camera.transform * vec4(planePoint, 1.0);
     vec3 direction = worldPoint.xyz - position;
     return Ray(position, direction, vec2(1e-5, 1e+5), 0, vec3(0.0));
