@@ -84,11 +84,11 @@ vec3 shade (const Ray ray) { // INCOMPLETE
 bool intersect (inout Ray ray, const Sphere sphere) { // INCOMPLETE
     vec3 o = ray.origin;
     vec3 d = ray.direction;
-    d= d.normalize();
+    d= normalize(d);
     vec3 c = sphere.position;
     float r = sphere.radius;
-    float cdistance = sqrt((c(0) - o(0))*(c(0) - o(0)) + (c(1) - o(1))*(c(1) - o(1)) + (c(2) - o(2))*(c(2) - o(2)));
-    float codistance = d(0)*(c(0) - o(0)) + d(1)*(c(1) - o(1)) + d(2)*(c(2) - o(2));
+    float cdistance = sqrt((c[0] - o[0])*(c[0] - o[0]) + (c[1] - o[1])*(c[1] - o[1]) + (c[2] - o[2])*(c[2] - o[2]));
+    float codistance = d[0]*(c[0] - o[0]) + d[1]*(c[1]- o[1]) + d[2]*(c[2] - o[2]);
     if (codistance < 0) {
         return false;
     }
@@ -99,8 +99,22 @@ bool intersect (inout Ray ray, const Sphere sphere) { // INCOMPLETE
 
     float linedistance = sqrt(r*r - shortdistance);
     float t = codistance - linedistance;
+    ray.intersectionPoint = t;
+    vec3 its;
+    its[0] = o[0] + d[0] * t;
+    its[1] = o[1] + d[1] * t;
+    its[2] = o[2] + d[2] * t;
 
-    return false;
+    if (t < ray.range[0] ||  t > ray.range[1]) {
+        return false;
+    }
+
+    ray.intersectionNormal[0] = its[0] - c[0];
+    ray.intersectionNormal[1] = its[1] - c[1];
+    ray.intersectionNormal[2] = its[2] - c[2];
+    ray.intersectionNormal = normalize(ray.intersectionNormal);
+
+    return true;
 }
 
 Ray generateRay (const vec2 uv, const Camera camera) { // INCOMPLETE
