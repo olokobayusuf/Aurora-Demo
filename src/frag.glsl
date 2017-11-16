@@ -33,40 +33,44 @@ const Sphere scene[2] = Sphere[] (
 
 #pragma region --Top level--
 
+vec3 radiance (const Ray ray);
 varying vec2 uv;
 
+/**
+* Raytrace for each `uv` position on screen.
+* We generate a way for the `uv` position and accumulate its radiance
+*/
 void main () {
-    /*
-    * This maps to `Scene::raytrace` in DIRT. From here, we want to generate a ray from `uv` and call `radiance`
-    */
-
+    // Create a ray from the `uv` coordinates
+    Ray ray = Ray(vec3(0.0), vec3(0.0), vec2(1e-5, 1e+5));
     // Set the color
-    gl_FragColor = vec4(uv.x, 0.0, uv.y, 1.0);
+    gl_FragColor = vec4(radiance(ray), 1.0);
 }
 
-void radiance (const Ray ray) {
-    /*
-    * Intersect the ray with the entire scene (call `intersect`) and save the closest intersection
-    * If there was no intersection, return the background color
-    * If not, call `shade`
-    */
+/**
+* Intersect the ray with the entire scene (call `intersect`) and save the closest intersection.
+* If there was no intersection, return the background color.
+* If there was, call `shade` and return the color.
+*/
+vec3 radiance (const Ray ray) { // INCOMPLETE
+    return vec3(0.0);
 }
 
-void shade (const Ray ray) {
-    /*
-    * Calculate the color and return it
-    */
+/**
+* Calculate the color for a ray and return it.
+*/
+vec3 shade (const Ray ray) { // INCOMPLETE
+    return vec3(0.0);
 }
 #pragma endregion
 
 
 #pragma region --Calculations--
 
-void intersect (inout Ray ray, const Sphere sphere) {
-
-}
-
-Ray generate_ray (const vec2 uv) {
-    return Ray(vec3(0.0), vec3(0.0), vec2(1e-5, 1e+5));
+/**
+* Ray-sphere intersection.
+*/
+bool intersect (inout Ray ray, const Sphere sphere) { // INCOMPLETE
+    return false;
 }
 #pragma endregion
