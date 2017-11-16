@@ -50,8 +50,8 @@ varying vec2 uv;
 void main () {
     // Create a ray from the `uv` coordinates
     vec3 position = vec3(0.0, 0.0, -5.0);
-    vec3 planePoint = vec3(uv.x, uv.y, -2.0);
-    vec3 direction = vec3(0.0, 0.0, 1.0);
+    vec3 planePoint = vec3(uv.x - 0.5, uv.y - 0.5, -2.0);
+    vec3 direction = planePoint - position;
     Ray ray = Ray(position, direction, vec2(1e-5, 1e+5), 0, vec3(0.0));
     // Set the color
     gl_FragColor = vec4(radiance(ray), 1.0);
@@ -63,7 +63,7 @@ void main () {
 * If there was, call `shade` and return the color.
 */
 vec3 radiance (const Ray ray) { // INCOMPLETE
-    return vec3(0.0);
+    return normalize(vec3(ray.direction.x, ray.direction.y, 0.0));
 }
 
 /**
