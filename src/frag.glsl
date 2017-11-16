@@ -29,12 +29,12 @@ struct Camera {
 
 const Sphere scene[SCENE_SIZE] = Sphere[] (
     Sphere(
-        vec3(0.0, 0.0, 0.0),
-        4.0
+        vec3(0.0, 0.0, 5.0),
+        1.0
     ),
     Sphere(
-        vec3(1.0, 2.0, 2.0),
-        4.0
+        vec3(2.0, -1.0, 6.0),
+        1.0
     )
 );
 #pragma endregion
@@ -54,8 +54,7 @@ varying vec2 uv;
 */
 void main () {
     // Create a camera
-    Camera camera = Camera(mat4(1.0), 2.0);
-    camera.transform[3] = vec4(0.0, 0.0, -5.0, 1.0);
+    Camera camera = Camera(mat4(1.0), 1.0);
     // Create a ray from the `uv` coordinates
     Ray ray = generateRay(uv, camera);
     // Set the color
@@ -95,43 +94,32 @@ vec3 shade (const Ray ray) { // INCOMPLETE
 */
 bool intersect (inout Ray ray, const Sphere sphere) { // INCOMPLETE
     vec3 o = ray.origin;
-    vec3 d = ray.direction;
-    d= normalize(d);
+    vec3 d = normalize(ray.direction);
     vec3 c = sphere.position;
     float r = sphere.radius;
-    float cdistance = sqrt((c[0] - o[0])*(c[0] - o[0]) + (c[1] - o[1])*(c[1] - o[1]) + (c[2] - o[2])*(c[2] - o[2]));
-    float codistance = d[0]*(c[0] - o[0]) + d[1]*(c[1]- o[1]) + d[2]*(c[2] - o[2]);
-    if (codistance < 0) {
-        return false;
-    }
-    float shortdistance = cdistance*cdistance - codistance*codistance;
-    if (shortdistance > r * r) {
-        return false;
-    }
-
-    float linedistance = sqrt(r*r - shortdistance);
-    float t = codistance - linedistance;
+    float rr = r * r;
+    float co_norm_sqr = dot(c - o, c - o);
+    float co_proj_d = dot(d, c - o);
+    // Check that the sphere isn't behind us
+    if (co_proj_d < 0) return false;
+    float proj_sphere_sqr = co_norm_sqr - co_proj_d * co_proj_d;
+    // Check that closest point on ray to sphere origin is less than or equal to sphere radius
+    if (proj_sphere_sqr > rr) return false;
+    // Get half chord distance
+    float half_chord = sqrt(rr - proj_sphere_sqr);
+    // Calculate t and intersection point
+    float t = co_proj_d - half_chord;
+    vec3 its = o + d * t;
+    // Check that we're in range
+    if (t < ray.range.x ||  t > ray.range.y) return false;
     ray.intersectionPoint = t;
-    vec3 its;
-    its[0] = o[0] + d[0] * t;
-    its[1] = o[1] + d[1] * t;
-    its[2] = o[2] + d[2] * t;
-
-    if (t < ray.range[0] ||  t > ray.range[1]) {
-        return false;
-    }
-
-    ray.intersectionNormal[0] = its[0] - c[0];
-    ray.intersectionNormal[1] = its[1] - c[1];
-    ray.intersectionNormal[2] = its[2] - c[2];
-    ray.intersectionNormal = normalize(ray.intersectionNormal);
-
+    ray.intersectionNormal = normalize(its - c);
     return true;
 }
 
 Ray generateRay (const vec2 uv, const Camera camera) { // INCOMPLETE
     vec3 position = camera.transform[3].xyz;
-    vec3 planePoint = vec3(uv.x - 0.5, uv.y - 0.5, -camera.fov);
+    vec3 planePoint = vec3(uv.x - 0.5, uv.y - 0.5, camera.fov);
     vec3 direction = planePoint - position;
     return Ray(position, direction, vec2(1e-5, 1e+5), 0, vec3(0.0));
 }
