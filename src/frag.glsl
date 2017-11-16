@@ -119,8 +119,17 @@ bool intersect (inout Ray ray, const Sphere sphere) { // INCOMPLETE
 
 Ray generateRay (const vec2 uv, const Camera camera) { // INCOMPLETE
     vec3 position = camera.transform[3].xyz;
+<<<<<<< HEAD
     vec3 planePoint = vec3(uv.x - 0.5, uv.y - 0.5, camera.fov);
     vec3 direction = planePoint - position;
+=======
+    vec3 planePoint = vec3(uv.x - 0.5, uv.y - 0.5, -camera.fov);
+    vec4 planePoint4v = vec4(planePoint, 1.0); //transform vec3 to vec4
+    
+    vec4 transformedVec = camera.transform * planePoint4v;
+    vec3 outPoint = transformedVec.xyz;
+    vec3 direction = outPoint - position;
+>>>>>>> 8a20701bb772d8dc260ba7ab92272832093e77e9
     return Ray(position, direction, vec2(1e-5, 1e+5), 0, vec3(0.0));
 }
 #pragma endregion
