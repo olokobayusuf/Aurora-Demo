@@ -27,6 +27,7 @@ struct Camera {
 
 #define M_PI 3.1415926535897932384626433832795
 #define SCENE_SIZE 2
+#define IMAGE_SAMPLES 1
 
 const Sphere scene[SCENE_SIZE] = Sphere[] (
     Sphere(
@@ -70,22 +71,17 @@ void main () {
 * If there was, call `shade` and return the color.
 */
 vec3 radiance (Ray ray) { // INCOMPLETE
-    vec3 color = vec3(0.0);
-    for (int i = 0; i < SCENE_SIZE; i++) {
-        Sphere sphere = scene[i];
-        if (intersect(ray, sphere)) {
-            color = vec3(1.0);
-            break;
-        }
-    }
-    return color;
+    for (int i = 0; i < SCENE_SIZE; i++) if (intersect(ray, scene[i])) ray.range.y = ray.intersectionPoint;
+    // Check if we hit something
+    if (ray.intersectionPoint > 0) return shade(ray);
+    return vec3(0.0);
 }
 
 /**
 * Calculate the color for a ray and return it.
 */
 vec3 shade (const Ray ray) { // INCOMPLETE
-    return vec3(0.0);
+    return ray.intersectionNormal;
 }
 #pragma endregion
 

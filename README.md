@@ -9,3 +9,9 @@
 
 ## Credits
 *INCOMPLETE*
+
+__
+
+## Notes
+- Physically accurate camera model with FOV
+- 
