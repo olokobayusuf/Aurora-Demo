@@ -11,11 +11,18 @@ struct Ray {
     vec3 origin;
     vec3 direction;
     vec2 range;
+    float intersectionPoint;
+    vec3 intersectionNormal;
 };
 
 struct Sphere {
     vec3 position;
     float radius;
+};
+
+struct Camera {
+    mat4 transform;
+    float fov;
 };
 
 const Sphere scene[2] = Sphere[] (
@@ -42,7 +49,10 @@ varying vec2 uv;
 */
 void main () {
     // Create a ray from the `uv` coordinates
-    Ray ray = Ray(vec3(0.0), vec3(0.0), vec2(1e-5, 1e+5));
+    vec3 position = vec3(0.0, 0.0, -5.0);
+    vec3 planePoint = vec3(uv.x, uv.y, -2.0);
+    vec3 direction = vec3(0.0, 0.0, 1.0);
+    Ray ray = Ray(position, direction, vec2(1e-5, 1e+5), 0, vec3(0.0));
     // Set the color
     gl_FragColor = vec4(radiance(ray), 1.0);
 }
