@@ -27,7 +27,7 @@ struct Camera {
 
 #define M_PI 3.1415926535897932384626433832795
 #define SCENE_SIZE 2
-#define IMAGE_SAMPLES 1
+#define IMAGE_SAMPLES 2.0
 
 const Sphere scene[SCENE_SIZE] = Sphere[] (
     Sphere(
@@ -59,10 +59,19 @@ varying vec2 uv;
 void main () {
     // Create a camera
     Camera camera = Camera(mat4(1.0), 60);
-    // Create a ray from the `uv` coordinates
-    Ray ray = generateRay(uv, camera);
+    // Get the texel size
+    vec2 texelSize = vec2(1.0 / WindowSize.x, 1.0 / WindowSize.y) / IMAGE_SAMPLES;
+    vec3 color = vec3(0.0);
+    for (int y = 0; y < IMAGE_SAMPLES; y++) for (int x = 0; x < IMAGE_SAMPLES; x++) {
+        // Calculate the sub-uv coordinates
+        vec2 sample_uv = uv + dot(texelSize, vec2(x, y)) - 0.5 * IMAGE_SAMPLES * texelSize;
+        // Create a ray from the `uv` coordinates
+        Ray ray = generateRay(sample_uv, camera);
+        // Accumulate color
+        color += radiance(ray);
+    }
     // Set the color
-    gl_FragColor = vec4(radiance(ray), 1.0);
+    gl_FragColor = vec4(color / IMAGE_SAMPLES / IMAGE_SAMPLES, 1.0);
 }
 
 /**
@@ -70,18 +79,19 @@ void main () {
 * If there was no intersection, return the background color.
 * If there was, call `shade` and return the color.
 */
-vec3 radiance (Ray ray) { // INCOMPLETE
+vec3 radiance (Ray ray) {
     for (int i = 0; i < SCENE_SIZE; i++) if (intersect(ray, scene[i])) ray.range.y = ray.intersectionPoint;
-    // Check if we hit something
+    // Check if we hit something and return the shading color
     if (ray.intersectionPoint > 0) return shade(ray);
-    return vec3(0.0);
+    // No intersection, so return background color
+    return vec3(0.1);
 }
 
 /**
 * Calculate the color for a ray and return it.
 */
 vec3 shade (const Ray ray) { // INCOMPLETE
-    return ray.intersectionNormal;
+    return -ray.intersectionNormal * 0.5 + vec3(0.5);
 }
 #pragma endregion
 
