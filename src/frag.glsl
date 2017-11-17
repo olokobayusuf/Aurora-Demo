@@ -144,11 +144,10 @@ vec3 radiance (Ray ray) { // INCOMPLETE
         mat3 frame = mat3(u, v, w);
         // Calculate a random ray direction on the unit hemisphere for light to bounce in
         vec3 hemispherePoint = normalize(vec3(
-            rand(3 * uv + vec2(3, -33)),
-            rand(5 * uv + vec2(-11, 8)),
-            rand(12 * uv + vec2(12, 3))
+            rand(3 * uv + vec2(3, -33)) - 0.5,
+            rand(5 * uv + vec2(-11, 8)) - 0.5,
+            rand(12 * uv + vec2(12, 3)) - 0.5
         ));
-        return hemispherePoint;
         ray.origin = shadingPoint + ray.intersectionNormal * 0.001;
         ray.direction = frame * hemispherePoint;
         ray.range = DEFAULT_RANGE; // Don't forget to reset the range
