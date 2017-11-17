@@ -31,8 +31,9 @@ struct Material {
 };
 
 #define M_PI 3.1415926535897932384626433832795
+#define DEFAULT_RANGE vec2(1e-5, 1e+5)
 #define SCENE_SIZE 10
-#define IMAGE_SAMPLES 2
+#define IMAGE_SAMPLES 1
 #define LIGHT_BOUNCES 5
 
 #define WALL_RADIUS 1e+5f
@@ -86,6 +87,7 @@ vec3 radiance (Ray ray);
 bool intersect_scene (inout Ray ray);
 bool intersect_sphere (inout Ray ray, const Sphere sphere);
 Ray generateRay (const vec2 uv, const Camera camera);
+float rand (vec2 seed);
 
 uniform vec2 WindowSize;
 varying vec2 uv;
@@ -128,14 +130,28 @@ vec3 radiance (Ray ray) { // INCOMPLETE
         Material material = materials[ray.intersectionMaterial];
 
         // DEBUG // REMOVE
-        accumulant += material.color* dot(ray.direction, ray.intersectionNormal);
-        break;
+        //accumulant += material.color* dot(ray.direction, ray.intersectionNormal);
+        //break;
 
         // Add emmision
         accumulant += material.emission * currentColor;
-        // Calculate a random ray direction for light to bounce in
-        //ray.direction += 
+        // Calculate an orthonormal frame at the shading point
+        // We use this frame to orient our random point on the unit hemisphere
+        vec3
+        w = ray.intersectionNormal,
+        u = cross(abs(w.x) > 0.1 ? vec3(0.0, 1.0, 0.0) : vec3(1.0, 0.0, 0.0), w),
+        v = cross(w, u);
+        mat3 frame = mat3(u, v, w);
+        // Calculate a random ray direction on the unit hemisphere for light to bounce in
+        vec3 hemispherePoint = normalize(vec3(
+            rand(3 * uv + vec2(3, -33)),
+            rand(5 * uv + vec2(-11, 8)),
+            rand(12 * uv + vec2(12, 3))
+        ));
+        return hemispherePoint;
         ray.origin = shadingPoint + ray.intersectionNormal * 0.001;
+        ray.direction = frame * hemispherePoint;
+        ray.range = DEFAULT_RANGE; // Don't forget to reset the range
         // Update the current color
         currentColor *= material.color * dot(-ray.direction, ray.intersectionNormal);
     }
@@ -192,7 +208,7 @@ Ray generateRay (const vec2 uv, const Camera camera) {
     vec3 planePoint = vec3((uv.x - 0.5) * WindowSize.x / WindowSize.y, uv.y - 0.5, planeZ);    
     vec4 worldPoint = camera.transform * vec4(planePoint, 1.0);
     vec3 direction = normalize(worldPoint.xyz - position);
-    return Ray(position, direction, vec2(1e-5, 1e+5), 0, vec3(0.0), -1);
+    return Ray(position, direction, DEFAULT_RANGE, 0, vec3(0.0), -1);
 }
 
 /**

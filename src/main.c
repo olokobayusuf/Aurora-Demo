@@ -54,8 +54,8 @@ int main (int argc, char* argv[]) {
 
 void render () {
     // Clear
-    glClearColor(0.f, 0.f, 0.f, 1.f);
-    glClear(GL_COLOR_BUFFER_BIT);
+    //glClearColor(0.f, 0.f, 0.f, 1.f);
+    //glClear(GL_COLOR_BUFFER_BIT);
     glLoadIdentity();
     // Draw a quad
     glBegin(GL_QUADS);
