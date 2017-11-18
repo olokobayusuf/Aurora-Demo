@@ -33,7 +33,7 @@ struct Material {
 #define M_PI 3.1415926535897932384626433832795
 #define DEFAULT_RANGE vec2(1e-5, 1e+5)
 #define SCENE_SIZE 10
-#define IMAGE_SAMPLES 1
+#define IMAGE_SAMPLES 2
 #define LIGHT_BOUNCES 5
 
 #define WALL_RADIUS 1e+5f
@@ -90,6 +90,7 @@ Ray generateRay (const vec2 uv, const Camera camera);
 float rand (vec2 seed);
 
 uniform vec2 WindowSize;
+uniform float frame;
 varying vec2 uv;
 
 /**
@@ -215,6 +216,6 @@ Ray generateRay (const vec2 uv, const Camera camera) {
 * Source: https://stackoverflow.com/questions/4200224/random-noise-functions-for-glsl
 */
 float rand (vec2 seed) {
-    return fract(sin(dot(seed.xy, vec2(12.9898, 78.233))) * 43758.5453);
+    return fract(sin(dot(vec2(seed.x * 1.2 * frame, seed.y * 0.7 * frame), vec2(12.9898, 78.233))) * 43758.5453);
 }
 #pragma endregion

@@ -1,4 +1,4 @@
-# Aurora Realtime Path-tracing Demo
+# Aurora Realtime Progressive Path-tracing Demo
 *INCOMPLETE*
 
 ## Architecture

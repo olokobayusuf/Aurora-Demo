@@ -25,6 +25,7 @@
 bool load_shaders (GLuint * const program);
 void render ();
 void drag_camera (int x, int y);
+static int frameUniform;
 
 int main (int argc, char* argv[]) {
     // Parse input
@@ -40,22 +41,26 @@ int main (int argc, char* argv[]) {
     glutInitWindowSize(screenWidth, screenHeight);
     glutCreateWindow("Aurora Demo");
     glutDisplayFunc(render);
+    glutIdleFunc(render);
     glutMotionFunc(drag_camera);
     glViewport(0,0, screenWidth, screenHeight);
     GLuint program; // This gets leaked :(
     if (!load_shaders(&program)) return EXIT_FAILURE;
     // Start running
     glUseProgram(program);
+    frameUniform = glGetUniformLocation(program, "frame");
     glUniform2f(glGetUniformLocation(program, "WindowSize"), screenWidth, screenHeight); // Set window size
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_ONE, GL_ONE);
     glMatrixMode(GL_MODELVIEW);
     glutMainLoop(); // Blocks on render loop
     return EXIT_SUCCESS;
 }
 
 void render () {
-    // Clear
-    //glClearColor(0.f, 0.f, 0.f, 1.f);
-    //glClear(GL_COLOR_BUFFER_BIT);
+    static int frame = 0;
+    frame++;
+    glUniform1f(frameUniform, frame);
     glLoadIdentity();
     // Draw a quad
     glBegin(GL_QUADS);
