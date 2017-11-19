@@ -62,7 +62,7 @@ const Sphere scene[SCENE_SIZE] = Sphere[] (
         4
     ),
     // Light
-    Sphere(vec3(0.0, WALL_OFFSET + 0.3, 0.0), 1.0, 0),
+    Sphere(vec3(0.0, WALL_OFFSET + 0.3, -3.0), 1.0, 0),
     // Walls
     Sphere(vec3(-WALL_RADIUS - WALL_OFFSET, 0.0, 0.0), WALL_RADIUS, 1), // Left wall
     Sphere(vec3(WALL_RADIUS + WALL_OFFSET, 0.0, 0.0), WALL_RADIUS, 2), // Right wall
@@ -90,7 +90,8 @@ Ray generateRay (const vec2 uv, const Camera camera);
 float rand (vec2 seed);
 
 uniform vec2 WindowSize;
-uniform float frame;
+uniform sampler2D frame;
+uniform float frameCount;
 varying vec2 uv;
 
 /**
@@ -113,8 +114,10 @@ void main () {
         // Accumulate color
         color += radiance(ray);
     }
+    // Normalize
+    color /= IMAGE_SAMPLES * IMAGE_SAMPLES;
     // Set the color
-    gl_FragColor = vec4(color / IMAGE_SAMPLES / IMAGE_SAMPLES, 1.0);
+    gl_FragColor = vec4(color, 1.0) + texture2D(frame, gl_FragCoord.xy);
 }
 
 /**
@@ -122,38 +125,33 @@ void main () {
 */
 vec3 radiance (Ray ray) { // INCOMPLETE
     vec3 accumulant = vec3(0.0);
-    vec3 currentColor = vec3(1.0);
+    vec3 mask = vec3(1.0);
     for (int bounce = 0; bounce < LIGHT_BOUNCES; bounce++) {
         // Check if the ray intersects with the scene
         if (!intersect_scene(ray)) break;
         // Calculate shading point
         vec3 shadingPoint = ray.origin + ray.direction * ray.intersectionPoint;
         Material material = materials[ray.intersectionMaterial];
-
-        // DEBUG // REMOVE
-        //accumulant += material.color* dot(ray.direction, ray.intersectionNormal);
-        //break;
-
         // Add emmision
-        accumulant += material.emission * currentColor;
+        accumulant += material.emission * mask;
         // Calculate an orthonormal frame at the shading point
         // We use this frame to orient our random point on the unit hemisphere
         vec3
         w = ray.intersectionNormal,
-        u = cross(abs(w.x) > 0.1 ? vec3(0.0, 1.0, 0.0) : vec3(1.0, 0.0, 0.0), w),
+        u = normalize(cross(vec3(0.0, 1.0, 0.0), w)),
         v = cross(w, u);
-        mat3 frame = mat3(u, v, w);
+        mat3 normalFrame = mat3(u, v, w);
         // Calculate a random ray direction on the unit hemisphere for light to bounce in
-        vec3 hemispherePoint = normalize(vec3(
-            rand(3 * uv + vec2(3, -33)) - 0.5,
-            rand(5 * uv + vec2(-11, 8)) - 0.5,
-            rand(12 * uv + vec2(12, 3)) - 0.5
-        ));
+        vec3 hemispherePoint = vec3(
+            rand(uv + vec2(0.323, -0.653434)) - 0.5,
+            rand(uv + vec2(-0.882, 0.63473)),
+            rand(uv + vec2(0.27382, 0.83742)) - 0.5
+        );
         ray.origin = shadingPoint + ray.intersectionNormal * 0.001;
-        ray.direction = frame * hemispherePoint;
+        ray.direction = normalize(normalFrame * hemispherePoint);
         ray.range = DEFAULT_RANGE; // Don't forget to reset the range
-        // Update the current color
-        currentColor *= material.color * dot(-ray.direction, ray.intersectionNormal);
+        // Update the mask color
+        mask *= material.color * dot(-ray.direction, ray.intersectionNormal);
     }
     return accumulant;
 }
@@ -195,7 +193,7 @@ bool intersect_sphere (inout Ray ray, const Sphere sphere) {
     if (t < ray.range.x ||  t > ray.range.y) return false;
     // Set ray params
     ray.intersectionPoint = t;
-    ray.intersectionNormal = normalize(sphere.position - its);
+    ray.intersectionNormal = (sphere.position - its) / sphere.radius;
     return true;
 }
 
@@ -216,6 +214,6 @@ Ray generateRay (const vec2 uv, const Camera camera) {
 * Source: https://stackoverflow.com/questions/4200224/random-noise-functions-for-glsl
 */
 float rand (vec2 seed) {
-    return fract(sin(dot(vec2(seed.x * 1.2 * frame, seed.y * 0.7 * frame), vec2(12.9898, 78.233))) * 43758.5453);
+    return fract(sin(dot(vec2(seed.x + 0.42323 * frameCount, seed.y + 0.71223 * frameCount), vec2(12.9898, 78.233))) * 43758.5453);
 }
 #pragma endregion
