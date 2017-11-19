@@ -66,8 +66,8 @@ int main (int argc, char* argv[]) {
     glUniform1i(glGetUniformLocation(program, "accumulateTexture"), 0);
     glUniform2f(glGetUniformLocation(program, "WindowSize"), screenWidth, screenHeight); // Set window size
     glMatrixMode(GL_MODELVIEW);
-    //glEnable(GL_BLEND);
-    //glBlendFunc(GL_ONE, GL_ONE);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_ONE, GL_ONE);
     glutMainLoop(); // Blocks on render loop
     return EXIT_SUCCESS;
 }

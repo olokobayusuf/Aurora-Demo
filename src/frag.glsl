@@ -87,6 +87,7 @@ vec3 radiance (Ray ray);
 bool intersect_scene (inout Ray ray);
 bool intersect_sphere (inout Ray ray, const Sphere sphere);
 Ray generate_ray (const vec2 uv, const Camera camera);
+vec3 generate_hemisphere_point (float random1, float random2);
 float rand (vec2 seed);
 
 uniform vec2 WindowSize;
@@ -120,14 +121,6 @@ void main () {
     gl_FragColor = vec4(color, 1.0);
 }
 
-vec3 generatePointHemisphere (float random1, float random2) {
-    return vec3 randomPoint = vec3(
-        cos(random1)*cos(random2),
-        sin(random1),
-        sin(ramdom2)*cos(random1)
-    );
-}
-
 /**
 * Calculate the color for a ray and return it.
 */
@@ -150,16 +143,12 @@ vec3 radiance (Ray ray) { // INCOMPLETE
         v = cross(w, u);
         mat3 normalFrame = mat3(u, v, w);
         // Calculate a random ray direction on the unit hemisphere for light to bounce in
-        vec3 hemispherePoint = vec3(
-            rand(uv + vec2(0.323, -0.653434)) - 0.5,
-            rand(uv + vec2(-0.882, 0.63473)),
-            rand(uv + vec2(0.27382, 0.83742)) - 0.5
-        );
-        ray.origin = shadingPoint + ray.intersectionNormal * 0.001;
+        vec3 hemispherePoint = generate_hemisphere_point(M_PI * rand(uv + vec2(0.323, -0.653434)), M_PI * rand(uv + vec2(-0.882, 0.63473)));
+        ray.origin = shadingPoint + ray.intersectionNormal * 0.0001;
         ray.direction = normalize(normalFrame * hemispherePoint);
         ray.range = DEFAULT_RANGE; // Don't forget to reset the range
         // Update the mask color
-        mask *= material.color; //* dot(-ray.direction, ray.intersectionNormal);
+        mask *= material.color * dot(-ray.direction, ray.intersectionNormal);
     }
     return accumulant;
 }
@@ -215,6 +204,14 @@ Ray generate_ray (const vec2 uv, const Camera camera) {
     vec4 worldPoint = camera.transform * vec4(planePoint, 1.0);
     vec3 direction = normalize(worldPoint.xyz - position);
     return Ray(position, direction, DEFAULT_RANGE, 0, vec3(0.0), -1);
+}
+
+vec3 generate_hemisphere_point (float random1, float random2) {
+    return vec3(
+        cos(random1) * cos(random2),
+        sin(random1),
+        sin(random2) * cos(random1)
+    );
 }
 
 /**
