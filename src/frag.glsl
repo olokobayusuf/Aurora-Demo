@@ -28,7 +28,7 @@ struct Camera {
 
 struct Light {
     vec3 position, color;
-}
+};
 
 struct Material {
     vec3 color, emission;
@@ -74,6 +74,10 @@ const Sphere scene[SCENE_SIZE] = Sphere[] (
     Sphere(vec3(0.0, -WALL_RADIUS - WALL_OFFSET, 0.0), WALL_RADIUS, 3),         // Floor
     Sphere(vec3(0.0, WALL_RADIUS + WALL_OFFSET, 0.0), WALL_RADIUS, 3),           // Ceiling
     Sphere(vec3(0.0, 0.0, WALL_RADIUS - 22.0), WALL_RADIUS, 2)     // Back wall (behind camera)
+);
+
+const Light lights[1] = Light[] (
+    Light(vec3(0.0, 8.0, 0.0), vec3(2.0))
 );
 
 const Material materials[5] = Material[] (
@@ -138,8 +142,19 @@ vec3 radiance (Ray ray) { // INCOMPLETE
         // Calculate shading point
         vec3 shadingPoint = ray.origin + ray.direction * ray.intersectionPoint;
         Material material = materials[ray.intersectionMaterial];
-        // Add emmision
-        accumulant += material.emission * mask;
+        // Compute diffuse lighting
+        for (int l = 0; l < 1; l++) {
+            // Calcualte light direction
+            Light light = lights[l];
+            vec3 lightDirection = light.position - shadingPoint;
+            float lightIntensity = length(light.color) / dot(lightDirection, lightDirection);
+            lightDirection = normalize(lightDirection);
+            // Check for shadow
+            Ray shadowRay = Ray(shadingPoint, lightDirection, DEFAULT_RANGE, 0, vec3(0.0), -1);
+            if (!intersect_scene(ray)) break;
+            // Compute light response
+            accumulant += mask * material.color * lightIntensity * max(dot(-lightDirection, ray.intersectionNormal), 0);
+        }
         // Update the mask color
         mask *= material.color * dot(-ray.direction, ray.intersectionNormal);
         // Calculate an orthonormal frame at the shading point

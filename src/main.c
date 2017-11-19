@@ -102,7 +102,6 @@ void render () {
 }
 
 void drag_camera (int x, int y) { // NOTE: Y is inverted (0 is top, not bottom)
-    // Orbit camera around scene
     printf("mouse drag at (%i %i)\n", x, y);
 }
 
