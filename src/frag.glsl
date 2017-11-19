@@ -3,6 +3,8 @@
 *   CS 77 - 17F
 */
 
+//TODO:: Work on optimizations
+
 #version 120
 
 #pragma region --Types and constants--
