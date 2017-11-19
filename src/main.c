@@ -26,7 +26,7 @@ bool load_shaders (GLuint * const program);
 void render ();
 void drag_camera (int x, int y);
 static int screenWidth, screenHeight;
-static GLuint frameTexture, framebuffer, frameCountUniform;
+static GLuint frameTexture, accumulateTexture, framebuffer, frameCountUniform;
 
 int main (int argc, char* argv[]) {
     // Parse input
@@ -48,9 +48,12 @@ int main (int argc, char* argv[]) {
     GLuint program; // This gets leaked :(
     if (!load_shaders(&program)) return EXIT_FAILURE;
     // Setup FBO
+    glGenTextures(1, &accumulateTexture);
+    glBindTexture(GL_TEXTURE_2D, accumulateTexture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F_ARB, screenWidth, screenHeight, 0, GL_RGBA, GL_FLOAT, NULL);
     glGenTextures(1, &frameTexture);
     glBindTexture(GL_TEXTURE_2D, frameTexture);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F_ARB, screenWidth, screenHeight, 0, GL_RGBA, GL_FLOAT, 0);    
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F_ARB, screenWidth, screenHeight, 0, GL_RGBA, GL_FLOAT, NULL);    
     glGenFramebuffers(1, &framebuffer);
     glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, frameTexture, 0);
@@ -60,11 +63,11 @@ int main (int argc, char* argv[]) {
     // Start running
     glUseProgram(program);
     frameCountUniform = glGetUniformLocation(program, "frameCount");
-    glUniform1i(glGetUniformLocation(program, "frame"), 0);
+    glUniform1i(glGetUniformLocation(program, "accumulateTexture"), 0);
     glUniform2f(glGetUniformLocation(program, "WindowSize"), screenWidth, screenHeight); // Set window size
     glMatrixMode(GL_MODELVIEW);
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_ONE, GL_ONE);
+    //glEnable(GL_BLEND);
+    //glBlendFunc(GL_ONE, GL_ONE);
     glutMainLoop(); // Blocks on render loop
     return EXIT_SUCCESS;
 }
@@ -74,7 +77,7 @@ void render () {
     frame++;
     glUniform1f(frameCountUniform, frame);
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, frameTexture);
+    glBindTexture(GL_TEXTURE_2D, accumulateTexture);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, framebuffer);
     glLoadIdentity();
     // Draw a quad
@@ -88,10 +91,12 @@ void render () {
     glTexCoord2f(0.f, 1.f);
     glVertex3f(-1.f, 1.f, -1.f);
     glEnd();
-    // Blit to screen
+    // Blit to screen and update accumulate texture
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
     glBindFramebuffer(GL_READ_FRAMEBUFFER, framebuffer);
     glBlitFramebuffer(0, 0, screenWidth, screenHeight, 0, 0, screenWidth, screenHeight, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+    glReadBuffer(GL_COLOR_ATTACHMENT0);
+    glCopyTexSubImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 0, 0, screenWidth, screenHeight, 0);
     // Post
     glutSwapBuffers();
 }
