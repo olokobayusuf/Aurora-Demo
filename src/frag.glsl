@@ -223,7 +223,7 @@ float rand (vec2 seed) {
     return fract(
         43758.5453 * sin(
             dot(
-                vec2(seed.x + 0.42323 * frameCount, seed.y + 0.71223 * frameCount),
+                vec2(uv.x * 0.2294 + seed.x + 0.42323 * frameCount, seed.y + uv.y * 0.245 + 0.71223 * frameCount),
                 vec2(12.9898, 78.233)
             )
         )
