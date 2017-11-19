@@ -151,7 +151,7 @@ vec3 radiance (Ray ray) { // INCOMPLETE
         ray.direction = normalize(normalFrame * hemispherePoint);
         ray.range = DEFAULT_RANGE; // Don't forget to reset the range
         // Update the mask color
-        mask *= material.color * dot(-ray.direction, ray.intersectionNormal);
+        mask *= material.color; //* dot(-ray.direction, ray.intersectionNormal);
     }
     return accumulant;
 }
