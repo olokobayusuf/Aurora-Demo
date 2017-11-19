@@ -101,8 +101,13 @@ void render () {
     glutSwapBuffers();
 }
 
+static float camPos[3];
+static int prevPos[2];
+
 void drag_camera (int x, int y) { // NOTE: Y is inverted (0 is top, not bottom)
     // Orbit camera around scene
+    float deltaX = x - prevX, deltaY = y - prevY;
+    prevX = x;
     printf("mouse drag at (%i %i)\n", x, y);
 }
 
