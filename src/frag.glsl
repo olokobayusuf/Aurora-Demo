@@ -26,6 +26,10 @@ struct Camera {
     float fov;
 };
 
+struct Light {
+    vec3 position, color;
+}
+
 struct Material {
     vec3 color, emission;
 };
