@@ -120,6 +120,14 @@ void main () {
     gl_FragColor = vec4(color, 1.0) + texture2D(frame, gl_FragCoord.xy);
 }
 
+vec3 generatePointHemisphere (float random1, float random2) {
+    return vec3 randomPoint = vec3(
+        cos(random1)*cos(random2),
+        sin(random1),
+        sin(ramdom2)*cos(random1)
+    );
+}
+
 /**
 * Calculate the color for a ray and return it.
 */
