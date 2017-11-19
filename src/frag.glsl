@@ -90,10 +90,12 @@ Ray generate_ray (const vec2 uv, const Camera camera);
 vec3 generate_hemisphere_point (float random1, float random2);
 float rand (vec2 seed);
 
+varying vec2 uv;
+
 uniform vec2 WindowSize;
+uniform vec3 cameraPosition;
 uniform sampler2D accumulateTexture;
 uniform float frameCount;
-varying vec2 uv;
 
 /**
 * Raytrace for each `uv` position on screen.
@@ -102,7 +104,7 @@ varying vec2 uv;
 void main () {
     // Create a camera
     mat4 camTransform = mat4(1.0);
-    camTransform[3] = vec4(0.0, 0.0, -18.0, 1.0);
+    camTransform[3] = vec4(cameraPosition, 1.0);
     Camera camera = Camera(camTransform, 60);
     // Get the texel size
     vec2 texelSize = vec2(1.0 / WindowSize.x, 1.0 / WindowSize.y) / IMAGE_SAMPLES;
