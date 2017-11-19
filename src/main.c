@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
+#include <math.h>
 
 #ifdef __APPLE__
     #include <GLUT/glut.h>
@@ -103,11 +104,18 @@ void render () {
 
 static float camPos[3];
 static int prevPos[2];
+const int cam_radius = 18;
 
 void drag_camera (int x, int y) { // NOTE: Y is inverted (0 is top, not bottom)
     // Orbit camera around scene
-    float deltaX = x - prevX, deltaY = y - prevY;
-    prevX = x;
+    float deltaPos[2];
+    deltaPos[0] = x - prevPos[0]; deltaPos[1] = y - prevPos[1];
+    double horizontal_angle = deltaPos[0] / cam_radius;
+    camPos[0] = camPos[0] + cam_radius * sin(horizontal_angle);
+    camPos[1] = camPos[1] - cam_radius + cam_radius * cos(horizontal_angle);
+    // float vertical_angle = 
+
+    prevPos[0] = x; prevPos[1] = y;
     printf("mouse drag at (%i %i)\n", x, y);
 }
 
