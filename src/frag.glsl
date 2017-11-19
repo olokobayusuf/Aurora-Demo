@@ -33,8 +33,8 @@ struct Material {
 #define M_PI 3.1415926535897932384626433832795
 #define DEFAULT_RANGE vec2(1e-5, 1e+5)
 #define SCENE_SIZE 10
-#define IMAGE_SAMPLES 2
-#define LIGHT_BOUNCES 5
+#define IMAGE_SAMPLES 1
+#define LIGHT_BOUNCES 20
 
 #define WALL_RADIUS 1e+5f
 #define WALL_OFFSET 8.0
@@ -72,11 +72,11 @@ const Sphere scene[SCENE_SIZE] = Sphere[] (
 );
 
 const Material materials[5] = Material[] (
-    Material(vec3(1.0), vec3(1.0)), // White light
-    Material(vec3(0.7, 0.2, 0.1), vec3(0.0)), // Reddish
-    Material(vec3(0.1, 0.3, 0.6), vec3(0.0)), // Blueish
-    Material(vec3(0.5), vec3(0.0)), // Gray
-    Material(vec3(0.8), vec3(0.0)) // Light gray
+    Material(vec3(1.0), vec3(1.0)),             // White light
+    Material(vec3(0.7, 0.2, 0.1), vec3(0.0)),   // Reddish
+    Material(vec3(0.1, 0.3, 0.6), vec3(0.0)),   // Blueish
+    Material(vec3(0.5), vec3(0.0)),             // Gray
+    Material(vec3(0.8), vec3(0.0))              // Light gray
 );
 #pragma endregion
 
@@ -86,11 +86,11 @@ const Material materials[5] = Material[] (
 vec3 radiance (Ray ray);
 bool intersect_scene (inout Ray ray);
 bool intersect_sphere (inout Ray ray, const Sphere sphere);
-Ray generateRay (const vec2 uv, const Camera camera);
+Ray generate_ray (const vec2 uv, const Camera camera);
 float rand (vec2 seed);
 
 uniform vec2 WindowSize;
-uniform sampler2D frame;
+uniform sampler2D accumulateTexture;
 uniform float frameCount;
 varying vec2 uv;
 
@@ -110,14 +110,14 @@ void main () {
         // Calculate the sub-uv coordinates
         vec2 sample_uv = uv + dot(texelSize, vec2(x, y)) - 0.5 * IMAGE_SAMPLES * texelSize;
         // Create a ray from the `uv` coordinates
-        Ray ray = generateRay(sample_uv, camera);
+        Ray ray = generate_ray(sample_uv, camera);
         // Accumulate color
         color += radiance(ray);
     }
     // Normalize
     color /= IMAGE_SAMPLES * IMAGE_SAMPLES;
     // Set the color
-    gl_FragColor = vec4(color, 1.0) + texture2D(frame, gl_FragCoord.xy);
+    gl_FragColor = vec4(color, 1.0);
 }
 
 vec3 generatePointHemisphere (float random1, float random2) {
@@ -208,7 +208,7 @@ bool intersect_sphere (inout Ray ray, const Sphere sphere) {
 /**
 * Generate a ray from the `uv` camera plane position
 */
-Ray generateRay (const vec2 uv, const Camera camera) {
+Ray generate_ray (const vec2 uv, const Camera camera) {
     float planeZ = 0.5 / tan(camera.fov * M_PI / 360.0);
     vec3 position = camera.transform[3].xyz;
     vec3 planePoint = vec3((uv.x - 0.5) * WindowSize.x / WindowSize.y, uv.y - 0.5, planeZ);    
@@ -222,6 +222,14 @@ Ray generateRay (const vec2 uv, const Camera camera) {
 * Source: https://stackoverflow.com/questions/4200224/random-noise-functions-for-glsl
 */
 float rand (vec2 seed) {
-    return fract(sin(dot(vec2(seed.x + 0.42323 * frameCount, seed.y + 0.71223 * frameCount), vec2(12.9898, 78.233))) * 43758.5453);
+    // TODO: Add uv.x * some random constant and uv.y * some random constant
+    return fract(
+        43758.5453 * sin(
+            dot(
+                vec2(seed.x + 0.42323 * frameCount, seed.y + 0.71223 * frameCount),
+                vec2(12.9898, 78.233)
+            )
+        )
+    );
 }
 #pragma endregion
