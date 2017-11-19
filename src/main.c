@@ -113,7 +113,8 @@ void drag_camera (int x, int y) { // NOTE: Y is inverted (0 is top, not bottom)
     double horizontal_angle = deltaPos[0] / cam_radius;
     camPos[0] = camPos[0] + cam_radius * sin(horizontal_angle);
     camPos[1] = camPos[1] - cam_radius + cam_radius * cos(horizontal_angle);
-    // float vertical_angle = 
+    double vertical_angle = deltaPos[1] / cam_radius;
+    camPos[2] = camPos[2] + cam_radius * sin(vertical_angle);
 
     prevPos[0] = x; prevPos[1] = y;
     printf("mouse drag at (%i %i)\n", x, y);
