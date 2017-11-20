@@ -5,7 +5,7 @@
 
 #version 120
 
-//#define INDIRECT_LIGHTING
+#define INDIRECT_LIGHTING
 
 #define IMAGE_SAMPLES 2
 #define LIGHT_BOUNCES 5
@@ -156,7 +156,7 @@ vec3 radiance (Ray ray) { // INCOMPLETE
         // Calculate an orthonormal frame at the shading point
         // We use this frame to orient our random point on the unit hemisphere
         vec3 w = ray.intersectionNormal, u = vec3(0.0), v = vec3(0.0);
-        if (abs(w.y) > 0.95) { // Swap v and w
+        if (abs(w.y) > 0.95) { // Pretty hacky
             float dir = sign(-w.y);
             v = dir * vec3(0.0, 1.0, 0.0);
             w = vec3(0.0, 0.0, 1.0);
