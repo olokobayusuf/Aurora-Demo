@@ -5,7 +5,7 @@
 
 #version 120
 
-#define INDIRECT_LIGHTING
+//#define INDIRECT_LIGHTING
 
 #define IMAGE_SAMPLES 2
 #define LIGHT_BOUNCES 5
@@ -146,8 +146,6 @@ vec3 radiance (Ray ray) { // INCOMPLETE
         // Check if the ray intersects with the scene
         if (!intersect_scene(ray)) break;
         #ifdef INDIRECT_LIGHTING
-        // Check if the ray intersects with the scene
-        if (!intersect_scene(ray)) break;
         // Calculate shading point
         vec3 shadingPoint = ray.origin + ray.direction * ray.intersectionPoint;
         Material material = materials[ray.intersectionMaterial];
