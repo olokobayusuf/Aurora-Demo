@@ -50,6 +50,10 @@ int main (int argc, char* argv[]) {
     // Setup FBO
     glGenTextures(1, &accumulateTexture);
     glBindTexture(GL_TEXTURE_2D, accumulateTexture);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F_ARB, screenWidth, screenHeight, 0, GL_RGBA, GL_FLOAT, NULL);
     glGenTextures(1, &frameTexture);
     glBindTexture(GL_TEXTURE_2D, frameTexture);
@@ -66,16 +70,15 @@ int main (int argc, char* argv[]) {
     glUniform1i(glGetUniformLocation(program, "accumulateTexture"), 0);
     glUniform2f(glGetUniformLocation(program, "WindowSize"), screenWidth, screenHeight); // Set window size
     glMatrixMode(GL_MODELVIEW);
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_ONE, GL_ONE);
+    //glEnable(GL_BLEND);
+    //glBlendFunc(GL_ONE, GL_ONE);
     glutMainLoop(); // Blocks on render loop
     return EXIT_SUCCESS;
 }
 
 void render () {
     static int frame = 0;
-    frame++;
-    glUniform1f(frameCountUniform, frame);
+    glUniform1f(frameCountUniform, frame++);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, accumulateTexture);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, framebuffer);

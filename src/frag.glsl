@@ -118,6 +118,7 @@ void main () {
     }
     // Normalize
     color /= IMAGE_SAMPLES * IMAGE_SAMPLES;
+    //color = mix(color, texture2D(accumulateTexture, uv).rgb, frameCount / (frameCount + 1.0));
     // Set the color
     gl_FragColor = vec4(color, 1.0);
 }
@@ -136,8 +137,6 @@ vec3 radiance (Ray ray) { // INCOMPLETE
         Material material = materials[ray.intersectionMaterial];
         // Add emmision
         accumulant += material.emission * mask;
-        // Update the mask color
-        mask *= material.color * dot(-ray.direction, ray.intersectionNormal);
         // Calculate an orthonormal frame at the shading point
         // We use this frame to orient our random point on the unit hemisphere
         vec3
@@ -150,6 +149,8 @@ vec3 radiance (Ray ray) { // INCOMPLETE
         ray.origin = shadingPoint + ray.intersectionNormal * 0.0001;
         ray.direction = normalize(normalFrame * hemispherePoint);
         ray.range = DEFAULT_RANGE; // Don't forget to reset the range
+        // Update the mask color
+        mask *= material.color * dot(-ray.direction, ray.intersectionNormal);
     }
     return accumulant;
 }
