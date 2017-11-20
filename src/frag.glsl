@@ -5,9 +5,11 @@
 
 #version 120
 
-#define IMAGE_SAMPLES 2
+//#define INDIRECT_LIGHTING
+
+#define IMAGE_SAMPLES 1
 #define LIGHT_BOUNCES 5
-#define SCENE_SIZE 10
+#define SCENE_SIZE 11
 #define WALL_RADIUS 1e+5f
 #define WALL_OFFSET 8.0
 #define DEFAULT_RANGE vec2(1e-5, 1e+5)
@@ -64,6 +66,8 @@ const Sphere scene[SCENE_SIZE] = Sphere[] (
         2.5,
         4
     ),
+    // Light
+    Sphere(vec3(0.0, WALL_OFFSET, 3.0), 0.3, 0),
     // Walls
     Sphere(vec3(-WALL_RADIUS - WALL_OFFSET, 0.0, 0.0), WALL_RADIUS, 1),         // Left wall
     Sphere(vec3(WALL_RADIUS + WALL_OFFSET, 0.0, 0.0), WALL_RADIUS, 2),          // Right wall
@@ -74,14 +78,14 @@ const Sphere scene[SCENE_SIZE] = Sphere[] (
 );
 
 const Light lights[1] = Light[] (
-    Light(vec3(0.0, 8.0, 0.0), vec3(300.0))
+    Light(vec3(0.0, WALL_OFFSET, 0.0), vec3(100.0))
 );
 
 const Material materials[5] = Material[] (
-    Material(vec3(0.0), vec3(2.0)),             // White light
+    Material(vec3(1.0), vec3(2.0)),             // White light
     Material(vec3(0.7, 0.2, 0.1), vec3(0.0)),   // Reddish
     Material(vec3(0.1, 0.3, 0.6), vec3(0.0)),   // Blueish
-    Material(vec3(0.5), vec3(0.0)),             // Gray
+    Material(vec3(0.7), vec3(0.0)),             // Gray
     Material(vec3(0.8), vec3(0.0))              // Light gray
 );
 #pragma endregion
@@ -137,6 +141,9 @@ vec3 radiance (Ray ray) { // INCOMPLETE
     for (int bounce = 0; bounce < LIGHT_BOUNCES; bounce++) {
         // Check if the ray intersects with the scene
         if (!intersect_scene(ray)) break;
+        #ifdef INDIRECT_LIGHTING
+
+        #else
         // Calculate shading point
         vec3 shadingPoint = ray.origin + ray.direction * ray.intersectionPoint;
         Material material = materials[ray.intersectionMaterial];
@@ -167,6 +174,7 @@ vec3 radiance (Ray ray) { // INCOMPLETE
         ray.origin = shadingPoint + ray.intersectionNormal * 0.0001;
         ray.direction = normalize(normalFrame * hemispherePoint);
         ray.range = DEFAULT_RANGE; // Don't forget to reset the range
+        #endif
     }
     return accumulant;
 }
