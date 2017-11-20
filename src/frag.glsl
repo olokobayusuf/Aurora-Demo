@@ -9,7 +9,7 @@
 
 #define IMAGE_SAMPLES 2
 #define LIGHT_BOUNCES 5
-#define SCENE_SIZE 11
+#define SCENE_SIZE 10
 #define WALL_RADIUS 1e+5f
 #define WALL_OFFSET 8.0
 #define DEFAULT_RANGE vec2(1e-5, 1e+5)
@@ -73,8 +73,7 @@ const Sphere scene[SCENE_SIZE] = Sphere[] (
     Sphere(vec3(WALL_RADIUS + WALL_OFFSET, 0.0, 0.0), WALL_RADIUS, 2),          // Right wall
     Sphere(vec3(0.0, 0.0, WALL_RADIUS + WALL_OFFSET + 3.0), WALL_RADIUS, 3),    // Front wall
     Sphere(vec3(0.0, -WALL_RADIUS - WALL_OFFSET, 0.0), WALL_RADIUS, 3),         // Floor
-    Sphere(vec3(0.0, WALL_RADIUS + WALL_OFFSET, 0.0), WALL_RADIUS, 3),           // Ceiling
-    Sphere(vec3(0.0, 0.0, WALL_RADIUS - 22.0), WALL_RADIUS, 2)     // Back wall (behind camera)
+    Sphere(vec3(0.0, WALL_RADIUS + WALL_OFFSET, 0.0), WALL_RADIUS, 3)           // Ceiling
 );
 
 const Light lights[1] = Light[] (
@@ -156,10 +155,16 @@ vec3 radiance (Ray ray) { // INCOMPLETE
         accumulant += material.emission * colorMask;
         // Calculate an orthonormal frame at the shading point
         // We use this frame to orient our random point on the unit hemisphere
-        vec3
-        w = ray.intersectionNormal,
-        u = normalize(cross(vec3(0.0, 1.0, 0.0), w)),
-        v = cross(w, u);
+        vec3 w = ray.intersectionNormal, u = vec3(0.0), v = vec3(0.0);
+        if (abs(w.y) > 0.95) { // Swap v and w
+            float dir = sign(-w.y);
+            v = dir * vec3(0.0, 1.0, 0.0);
+            w = vec3(0.0, 0.0, 1.0);
+            u = vec3(1.0, 0.0, 0.0);
+        } else {
+            u = normalize(cross(vec3(0.0, 1.0, 0.0), w));
+            v = cross(w, u);
+        }
         mat3 normalFrame = mat3(u, v, w);
         // Calculate a random ray direction on the unit hemisphere for light to bounce in
         vec3 hemispherePoint = generate_hemisphere_point(M_PI * rand(uv + vec2(0.323, -0.653434)), M_PI * rand(uv + vec2(-0.882, 0.63473)));
