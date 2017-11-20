@@ -7,7 +7,7 @@
 
 //#define INDIRECT_LIGHTING
 
-#define IMAGE_SAMPLES 1
+#define IMAGE_SAMPLES 2
 #define LIGHT_BOUNCES 5
 #define SCENE_SIZE 11
 #define WALL_RADIUS 1e+5f
@@ -67,7 +67,7 @@ const Sphere scene[SCENE_SIZE] = Sphere[] (
         4
     ),
     // Light
-    Sphere(vec3(0.0, WALL_OFFSET, 3.0), 0.3, 0),
+    Sphere(vec3(0.0, WALL_OFFSET, -3.0), 1.0, 0),
     // Walls
     Sphere(vec3(-WALL_RADIUS - WALL_OFFSET, 0.0, 0.0), WALL_RADIUS, 1),         // Left wall
     Sphere(vec3(WALL_RADIUS + WALL_OFFSET, 0.0, 0.0), WALL_RADIUS, 2),          // Right wall
@@ -78,14 +78,14 @@ const Sphere scene[SCENE_SIZE] = Sphere[] (
 );
 
 const Light lights[1] = Light[] (
-    Light(vec3(0.0, WALL_OFFSET, 0.0), vec3(100.0))
+    Light(vec3(0.0, WALL_OFFSET, 0.0), vec3(150.0))
 );
 
 const Material materials[5] = Material[] (
     Material(vec3(1.0), vec3(2.0)),             // White light
     Material(vec3(0.7, 0.2, 0.1), vec3(0.0)),   // Reddish
     Material(vec3(0.1, 0.3, 0.6), vec3(0.0)),   // Blueish
-    Material(vec3(0.7), vec3(0.0)),             // Gray
+    Material(vec3(0.4), vec3(0.0)),             // Gray
     Material(vec3(0.8), vec3(0.0))              // Light gray
 );
 #pragma endregion
@@ -127,7 +127,12 @@ void main () {
     }
     // Normalize and blend with accumulation texture
     color /= IMAGE_SAMPLES * IMAGE_SAMPLES;
-    color = mix(color, texture2D(accumulateTexture, uv).rgb, frameCount / (frameCount + 1.0));
+    vec3 accumulatedColor = texture2D(accumulateTexture, uv).rgb;
+    #ifdef INDIRECT_LIGHTING
+    color = max(color, accumulatedColor);
+    #else
+    color = mix(color, accumulatedColor, frameCount / (frameCount + 1.0));
+    #endif
     // Set the color
     gl_FragColor = vec4(color, 1.0);
 }
@@ -142,7 +147,27 @@ vec3 radiance (Ray ray) { // INCOMPLETE
         // Check if the ray intersects with the scene
         if (!intersect_scene(ray)) break;
         #ifdef INDIRECT_LIGHTING
-
+        // Check if the ray intersects with the scene
+        if (!intersect_scene(ray)) break;
+        // Calculate shading point
+        vec3 shadingPoint = ray.origin + ray.direction * ray.intersectionPoint;
+        Material material = materials[ray.intersectionMaterial];
+        // Add emmision
+        accumulant += material.emission * colorMask;
+        // Calculate an orthonormal frame at the shading point
+        // We use this frame to orient our random point on the unit hemisphere
+        vec3
+        w = ray.intersectionNormal,
+        u = normalize(cross(vec3(0.0, 1.0, 0.0), w)),
+        v = cross(w, u);
+        mat3 normalFrame = mat3(u, v, w);
+        // Calculate a random ray direction on the unit hemisphere for light to bounce in
+        vec3 hemispherePoint = generate_hemisphere_point(M_PI * rand(uv + vec2(0.323, -0.653434)), M_PI * rand(uv + vec2(-0.882, 0.63473)));
+        ray.origin = shadingPoint + ray.intersectionNormal * 0.0001;
+        ray.direction = normalize(normalFrame * hemispherePoint);
+        ray.range = DEFAULT_RANGE; // Don't forget to reset the range
+        // Update the mask color
+        colorMask *= material.color * dot(-ray.direction, ray.intersectionNormal);
         #else
         // Calculate shading point
         vec3 shadingPoint = ray.origin + ray.direction * ray.intersectionPoint;
