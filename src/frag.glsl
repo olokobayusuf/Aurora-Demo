@@ -5,7 +5,7 @@
 
 #version 120
 
-//#define INDIRECT_LIGHTING
+#define INDIRECT_LIGHTING
 
 #define IMAGE_SAMPLES 2
 #define LIGHT_BOUNCES 5
