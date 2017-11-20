@@ -20,13 +20,27 @@
     #include <GL/glut.h>
 #endif
 
-#define INFOLOG_LEN 1024
+#define INFOLOG_SIZE 1024
 
 bool load_shaders (GLuint * const program);
 void render ();
 void drag_camera (int x, int y);
 static int screenWidth, screenHeight;
-static GLuint frameTexture, accumulateTexture, framebuffer, frameCountUniform;
+static GLuint dataBuffer[2], frameTextures[2], framebuffer, frameCountUniform;
+static GLint positionAttribute, uvAttribute, accumulateUniform;
+static int fboAttachment;
+
+static float vertexData[] = {
+    -1.0f,  -1.0f,  // Position 0
+    1.0f,  -1.0f,   // Position 1
+    -1.0f,   1.0f,  // Position 2
+    1.0f,   1.0f    // Position 3
+}, textureData[] = {
+    0.0f,   0.0f,   // TexCoord 0
+    1.0f,   0.0f,   // TexCoord 1
+    0.0f,   1.0f,   // TexCoord 2
+    1.0f,   1.0f    // TexCoord 3
+};
 
 int main (int argc, char* argv[]) {
     // Parse input
@@ -45,58 +59,53 @@ int main (int argc, char* argv[]) {
     glutIdleFunc(render);
     glutMotionFunc(drag_camera);
     glViewport(0,0, screenWidth, screenHeight);
+    // Load program
     GLuint program; // This gets leaked :(
     if (!load_shaders(&program)) return EXIT_FAILURE;
     // Setup FBO
-    glGenTextures(1, &accumulateTexture);
-    glBindTexture(GL_TEXTURE_2D, accumulateTexture);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F_ARB, screenWidth, screenHeight, 0, GL_RGBA, GL_FLOAT, NULL);
-    glGenTextures(1, &frameTexture);
-    glBindTexture(GL_TEXTURE_2D, frameTexture);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F_ARB, screenWidth, screenHeight, 0, GL_RGBA, GL_FLOAT, NULL);    
+    glGenTextures(2, frameTextures);
+    for (int i = 0; i < 2; i++) {
+        glBindTexture(GL_TEXTURE_2D, frameTextures[i]);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F_ARB, screenWidth, screenHeight, 0, GL_RGBA, GL_FLOAT, NULL);
+    }
     glGenFramebuffers(1, &framebuffer);
-    glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, frameTexture, 0);
-    const GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-    if (GL_FRAMEBUFFER_COMPLETE != status) fprintf(stderr, "Error: Failed to prepare framebuffer\n");
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    // Generate drawing resources
+    glGenBuffers(2, dataBuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, dataBuffer[0]);
+    glBufferData(GL_ARRAY_BUFFER, sizeof vertexData * 4, vertexData, GL_STATIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, dataBuffer[1]);
+    glBufferData(GL_ARRAY_BUFFER, sizeof textureData * 4, textureData, GL_STATIC_DRAW);
     // Start running
-    glUseProgram(program);
-    frameCountUniform = glGetUniformLocation(program, "frameCount");
-    glUniform1i(glGetUniformLocation(program, "accumulateTexture"), 0);
-    glUniform2f(glGetUniformLocation(program, "WindowSize"), screenWidth, screenHeight); // Set window size
-    glMatrixMode(GL_MODELVIEW);
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_ONE, GL_ONE);
     glutMainLoop(); // Blocks on render loop
     return EXIT_SUCCESS;
 }
 
 void render () {
     static int frame = 0;
-    frame++;
-    glUniform1f(frameCountUniform, frame);
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, accumulateTexture);
+    glUniform1f(frameCountUniform, frame++);
+    // Bind FBO and accumulate texture
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, framebuffer);
-    glLoadIdentity();
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, frameTextures[fboAttachment], 0);
+    fboAttachment = (int)!fboAttachment;
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, frameTextures[fboAttachment]);
+    glUniform1i(accumulateUniform, 0);
     // Draw a quad
-    glBegin(GL_QUADS);
-    glTexCoord2f(0.f, 0.f);
-    glVertex3f(-1.f, -1.f, -1.f);
-    glTexCoord2f(1.f, 0.f);
-    glVertex3f(1.f, -1.f, -1.f);
-    glTexCoord2f(1.f, 1.f);
-    glVertex3f(1.f, 1.f, -1.f);
-    glTexCoord2f(0.f, 1.f);
-    glVertex3f(-1.f, 1.f, -1.f);
-    glEnd();
-    // Blit to screen and update accumulate texture
+    glBindBuffer(GL_ARRAY_BUFFER, dataBuffer[0]);
+    glEnableVertexAttribArray(positionAttribute);
+    glVertexAttribPointer(positionAttribute, 2, GL_FLOAT, false, 0, 0);
+    glBindBuffer(GL_ARRAY_BUFFER, dataBuffer[1]);
+    glEnableVertexAttribArray(uvAttribute);
+    glVertexAttribPointer(uvAttribute, 2, GL_FLOAT, false, 0, 0);
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    // Blit to screen
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
     glBindFramebuffer(GL_READ_FRAMEBUFFER, framebuffer);
     glBlitFramebuffer(0, 0, screenWidth, screenHeight, 0, 0, screenWidth, screenHeight, GL_COLOR_BUFFER_BIT, GL_NEAREST);
-    glReadBuffer(GL_COLOR_ATTACHMENT0);
-    glCopyTexSubImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 0, 0, screenWidth, screenHeight, 0);
     // Post
     glutSwapBuffers();
 }
@@ -133,10 +142,10 @@ bool load_shaders (GLuint * const program) {
     GLint vertexShader = glCreateShader(GL_VERTEX_SHADER);
     glShaderSource(vertexShader, 1, &vertexSource, NULL);
     glCompileShader(vertexShader);
-    GLint success; char infoLog[INFOLOG_LEN];
+    GLint success; char infoLog[INFOLOG_SIZE];
     glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
     if (!success) {
-        glGetShaderInfoLog(vertexShader, INFOLOG_LEN, NULL, infoLog);
+        glGetShaderInfoLog(vertexShader, INFOLOG_SIZE, NULL, infoLog);
         glDeleteShader(vertexShader);
         fprintf(stderr, "Error: Failed to compile vertex shader with error: %s\n", infoLog);
         return false;
@@ -147,7 +156,7 @@ bool load_shaders (GLuint * const program) {
     glCompileShader(fragmentShader);
     glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
     if (!success) {
-        glGetShaderInfoLog(fragmentShader, INFOLOG_LEN, NULL, infoLog);
+        glGetShaderInfoLog(fragmentShader, INFOLOG_SIZE, NULL, infoLog);
         glDeleteShader(vertexShader);
         glDeleteShader(fragmentShader);
         fprintf(stderr, "Error: Failed to compile fragment shader with error: %s\n", infoLog);
@@ -162,7 +171,7 @@ bool load_shaders (GLuint * const program) {
     if (!success) {
         glDeleteShader(vertexShader);
         glDeleteShader(fragmentShader);
-        glGetShaderInfoLog(shaderProgram, INFOLOG_LEN, NULL, infoLog);
+        glGetShaderInfoLog(shaderProgram, INFOLOG_SIZE, NULL, infoLog);
         fprintf(stderr, "Error: Failed to link shader with error: %s\n", infoLog);
         return false;
     }
@@ -171,5 +180,12 @@ bool load_shaders (GLuint * const program) {
     glDeleteShader(vertexShader);
     glDeleteShader(fragmentShader);
     *program = shaderProgram;
+    // Get attributes and uniforms
+    glUseProgram(shaderProgram);
+    positionAttribute = glGetAttribLocation(shaderProgram, "a_position");
+    uvAttribute = glGetAttribLocation(shaderProgram, "a_texcoord");
+    frameCountUniform = glGetUniformLocation(shaderProgram, "frameCount");
+    accumulateUniform = glGetUniformLocation(shaderProgram, "accumulateTexture");
+    glUniform2f(glGetUniformLocation(shaderProgram, "WindowSize"), screenWidth, screenHeight); // Set window size
     return true;
 }
