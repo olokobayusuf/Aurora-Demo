@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
+#include <math.h>
 
 #ifdef __APPLE__
     #include <GLUT/glut.h>
@@ -25,8 +26,14 @@
 bool load_shaders (GLuint * const program);
 void render ();
 void drag_camera (int x, int y);
+
 static int screenWidth, screenHeight;
-static GLuint frameTexture, accumulateTexture, framebuffer, frameCountUniform;
+static GLuint frameTexture, accumulateTexture, framebuffer;
+static GLuint cameraPositionUniform, frameCountUniform;
+
+const int camRadius = 18;
+static float camPos[3] = {0, 0, -camRadius};
+static int prevPos[2];
 
 int main (int argc, char* argv[]) {
     // Parse input
@@ -62,9 +69,11 @@ int main (int argc, char* argv[]) {
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     // Start running
     glUseProgram(program);
+    cameraPositionUniform = glGetUniformLocation(program, "cameraPosition");
     frameCountUniform = glGetUniformLocation(program, "frameCount");
     glUniform1i(glGetUniformLocation(program, "accumulateTexture"), 0);
     glUniform2f(glGetUniformLocation(program, "WindowSize"), screenWidth, screenHeight); // Set window size
+    glUniform3f(cameraPositionUniform, camPos[0], camPos[1], camPos[2]);
     glMatrixMode(GL_MODELVIEW);
     glEnable(GL_BLEND);
     glBlendFunc(GL_ONE, GL_ONE);
@@ -103,7 +112,25 @@ void render () {
 
 void drag_camera (int x, int y) { // NOTE: Y is inverted (0 is top, not bottom)
     // Orbit camera around scene
-    printf("mouse drag at (%i %i)\n", x, y);
+    if (prevPos[0] == 0) {
+        prevPos[0] = x;
+        prevPos[1] = y;
+    }
+    float deltaPos[2];
+    deltaPos[0] = x - prevPos[0]; deltaPos[1] = y - prevPos[1];
+
+    double horizontal_angle = deltaPos[0] / camRadius;
+    camPos[0] = camPos[0] + camRadius * sin(horizontal_angle);
+    camPos[2] = camPos[2] + camRadius - camRadius * cos(horizontal_angle);
+
+    double vertical_angle = deltaPos[1] / camRadius;
+    camPos[1] = camPos[1] + camRadius * sin(vertical_angle);
+    
+    prevPos[0] = x; prevPos[1] = y;
+    glUniform3f(cameraPositionUniform, camPos[0], camPos[1], camPos[2]);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, framebuffer);
+    glClearColor(0.f, 0.f, 0.f, 0.f);
+    glClear(GL_COLOR_BUFFER_BIT);
 }
 
 bool load_shaders (GLuint * const program) {
