@@ -32,9 +32,9 @@ struct Material {
 
 #define M_PI 3.1415926535897932384626433832795
 #define DEFAULT_RANGE vec2(1e-5, 1e+5)
-#define SCENE_SIZE 10
-#define IMAGE_SAMPLES 1
-#define LIGHT_BOUNCES 20
+#define SCENE_SIZE 11
+#define IMAGE_SAMPLES 2
+#define LIGHT_BOUNCES 5
 
 #define WALL_RADIUS 1e+5f
 #define WALL_OFFSET 8.0
@@ -62,17 +62,18 @@ const Sphere scene[SCENE_SIZE] = Sphere[] (
         4
     ),
     // Light
-    Sphere(vec3(0.0, WALL_OFFSET + 0.3, -3.0), 1.0, 0),
+    Sphere(vec3(0.0, WALL_OFFSET, -3.0), 1.0, 0),
     // Walls
-    Sphere(vec3(-WALL_RADIUS - WALL_OFFSET, 0.0, 0.0), WALL_RADIUS, 1), // Left wall
-    Sphere(vec3(WALL_RADIUS + WALL_OFFSET, 0.0, 0.0), WALL_RADIUS, 2), // Right wall
-    Sphere(vec3(0.0, 0.0, WALL_RADIUS + WALL_OFFSET + 3.0), WALL_RADIUS, 3), // Back wall
-    Sphere(vec3(0.0, -WALL_RADIUS - WALL_OFFSET, 0.0), WALL_RADIUS, 3), // Floor
-    Sphere(vec3(0.0, WALL_RADIUS + WALL_OFFSET, 0.0), WALL_RADIUS, 3) // Ceiling
+    Sphere(vec3(-WALL_RADIUS - WALL_OFFSET, 0.0, 0.0), WALL_RADIUS, 1),         // Left wall
+    Sphere(vec3(WALL_RADIUS + WALL_OFFSET, 0.0, 0.0), WALL_RADIUS, 2),          // Right wall
+    Sphere(vec3(0.0, 0.0, WALL_RADIUS + WALL_OFFSET + 3.0), WALL_RADIUS, 3),    // Front wall
+    Sphere(vec3(0.0, -WALL_RADIUS - WALL_OFFSET, 0.0), WALL_RADIUS, 3),         // Floor
+    Sphere(vec3(0.0, WALL_RADIUS + WALL_OFFSET, 0.0), WALL_RADIUS, 3),           // Ceiling
+    Sphere(vec3(0.0, 0.0, WALL_RADIUS - 22.0), WALL_RADIUS, 2)     // Back wall (behind camera)
 );
 
 const Material materials[5] = Material[] (
-    Material(vec3(1.0), vec3(1.0)),             // White light
+    Material(vec3(0.0), vec3(2.0)),             // White light
     Material(vec3(0.7, 0.2, 0.1), vec3(0.0)),   // Reddish
     Material(vec3(0.1, 0.3, 0.6), vec3(0.0)),   // Blueish
     Material(vec3(0.5), vec3(0.0)),             // Gray
@@ -137,6 +138,8 @@ vec3 radiance (Ray ray) { // INCOMPLETE
         Material material = materials[ray.intersectionMaterial];
         // Add emmision
         accumulant += material.emission * mask;
+        // Update the mask color
+        mask *= material.color * dot(-ray.direction, ray.intersectionNormal);
         // Calculate an orthonormal frame at the shading point
         // We use this frame to orient our random point on the unit hemisphere
         vec3
@@ -149,8 +152,6 @@ vec3 radiance (Ray ray) { // INCOMPLETE
         ray.origin = shadingPoint + ray.intersectionNormal * 0.0001;
         ray.direction = normalize(normalFrame * hemispherePoint);
         ray.range = DEFAULT_RANGE; // Don't forget to reset the range
-        // Update the mask color
-        mask *= material.color * dot(-ray.direction, ray.intersectionNormal);
     }
     return accumulant;
 }
@@ -225,7 +226,7 @@ float rand (vec2 seed) {
     return fract(
         43758.5453 * sin(
             dot(
-                vec2(seed.x + 0.42323 * frameCount, seed.y + 0.71223 * frameCount),
+                vec2(uv.x * 0.2294 + seed.x + 0.42323 * frameCount, seed.y + uv.y * 0.245 + 0.71223 * frameCount),
                 vec2(12.9898, 78.233)
             )
         )
