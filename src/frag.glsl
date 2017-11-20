@@ -5,6 +5,16 @@
 
 #version 120
 
+#define INDIRECT_LIGHTING
+
+#define IMAGE_SAMPLES 2
+#define LIGHT_BOUNCES 5
+#define SCENE_SIZE 10
+#define WALL_RADIUS 1e+5f
+#define WALL_OFFSET 8.0
+#define DEFAULT_RANGE vec2(1e-5, 1e+5)
+#define M_PI 3.1415926535897932384626433832795
+
 #pragma region --Types and constants--
 
 struct Ray {
@@ -26,18 +36,13 @@ struct Camera {
     float fov;
 };
 
+struct Light {
+    vec3 position, color;
+};
+
 struct Material {
     vec3 color, emission;
 };
-
-#define M_PI 3.1415926535897932384626433832795
-#define DEFAULT_RANGE vec2(1e-5, 1e+5)
-#define SCENE_SIZE 11
-#define IMAGE_SAMPLES 2
-#define LIGHT_BOUNCES 5
-
-#define WALL_RADIUS 1e+5f
-#define WALL_OFFSET 8.0
 
 const Sphere scene[SCENE_SIZE] = Sphere[] (
     // Scene
@@ -68,15 +73,18 @@ const Sphere scene[SCENE_SIZE] = Sphere[] (
     Sphere(vec3(WALL_RADIUS + WALL_OFFSET, 0.0, 0.0), WALL_RADIUS, 2),          // Right wall
     Sphere(vec3(0.0, 0.0, WALL_RADIUS + WALL_OFFSET + 3.0), WALL_RADIUS, 3),    // Front wall
     Sphere(vec3(0.0, -WALL_RADIUS - WALL_OFFSET, 0.0), WALL_RADIUS, 3),         // Floor
-    Sphere(vec3(0.0, WALL_RADIUS + WALL_OFFSET, 0.0), WALL_RADIUS, 3),           // Ceiling
-    Sphere(vec3(0.0, 0.0, WALL_RADIUS - 22.0), WALL_RADIUS, 2)     // Back wall (behind camera)
+    Sphere(vec3(0.0, WALL_RADIUS + WALL_OFFSET, 0.0), WALL_RADIUS, 3)           // Ceiling
+);
+
+const Light lights[1] = Light[] (
+    Light(vec3(0.0, WALL_OFFSET, 0.0), vec3(150.0))
 );
 
 const Material materials[5] = Material[] (
-    Material(vec3(0.0), vec3(2.0)),             // White light
+    Material(vec3(1.0), vec3(2.0)),             // White light
     Material(vec3(0.7, 0.2, 0.1), vec3(0.0)),   // Reddish
     Material(vec3(0.1, 0.3, 0.6), vec3(0.0)),   // Blueish
-    Material(vec3(0.5), vec3(0.0)),             // Gray
+    Material(vec3(0.4), vec3(0.0)),             // Gray
     Material(vec3(0.8), vec3(0.0))              // Light gray
 );
 #pragma endregion
@@ -91,11 +99,12 @@ Ray generate_ray (const vec2 uv, const Camera camera);
 vec3 generate_hemisphere_point (float random1, float random2);
 float rand (vec2 seed);
 
+
 varying vec2 uv;
 
-uniform vec2 WindowSize;
 uniform vec3 cameraPosition;
 uniform sampler2D accumulateTexture;
+uniform vec2 WindowSize;
 uniform float frameCount;
 
 /**
@@ -118,8 +127,14 @@ void main () {
         // Accumulate color
         color += radiance(ray);
     }
-    // Normalize
+    // Normalize and blend with accumulation texture
     color /= IMAGE_SAMPLES * IMAGE_SAMPLES;
+    vec3 accumulatedColor = texture2D(accumulateTexture, uv).rgb;
+    #ifdef INDIRECT_LIGHTING
+    color = max(color, accumulatedColor);
+    #else
+    color = mix(color, accumulatedColor, frameCount / (frameCount + 1.0));
+    #endif
     // Set the color
     gl_FragColor = vec4(color, 1.0);
 }
@@ -129,17 +144,55 @@ void main () {
 */
 vec3 radiance (Ray ray) { // INCOMPLETE
     vec3 accumulant = vec3(0.0);
-    vec3 mask = vec3(1.0);
+    vec3 colorMask = vec3(1.0);
     for (int bounce = 0; bounce < LIGHT_BOUNCES; bounce++) {
         // Check if the ray intersects with the scene
         if (!intersect_scene(ray)) break;
+        #ifdef INDIRECT_LIGHTING
         // Calculate shading point
         vec3 shadingPoint = ray.origin + ray.direction * ray.intersectionPoint;
         Material material = materials[ray.intersectionMaterial];
         // Add emmision
-        accumulant += material.emission * mask;
+        accumulant += material.emission * colorMask;
+        // Calculate an orthonormal frame at the shading point
+        // We use this frame to orient our random point on the unit hemisphere
+        vec3 w = ray.intersectionNormal, u = vec3(0.0), v = vec3(0.0);
+        if (abs(w.y) > 0.95) { // Pretty hacky
+            float dir = sign(-w.y);
+            v = dir * vec3(0.0, 1.0, 0.0);
+            w = vec3(0.0, 0.0, 1.0);
+            u = vec3(1.0, 0.0, 0.0);
+        } else {
+            u = normalize(cross(vec3(0.0, 1.0, 0.0), w));
+            v = cross(w, u);
+        }
+        mat3 normalFrame = mat3(u, v, w);
+        // Calculate a random ray direction on the unit hemisphere for light to bounce in
+        vec3 hemispherePoint = generate_hemisphere_point(M_PI * rand(uv + vec2(0.323, -0.653434)), M_PI * rand(uv + vec2(-0.882, 0.63473)));
+        ray.origin = shadingPoint + ray.intersectionNormal * 0.0001;
+        ray.direction = normalize(normalFrame * hemispherePoint);
+        ray.range = DEFAULT_RANGE; // Don't forget to reset the range
         // Update the mask color
-        mask *= material.color * dot(-ray.direction, ray.intersectionNormal);
+        colorMask *= material.color * dot(-ray.direction, ray.intersectionNormal);
+        #else
+        // Calculate shading point
+        vec3 shadingPoint = ray.origin + ray.direction * ray.intersectionPoint;
+        Material material = materials[ray.intersectionMaterial];
+        colorMask *= material.color;// * dot(-ray.direction, ray.intersectionNormal);
+        // Compute diffuse lighting
+        for (int l = 0; l < 1; l++) {
+            // Calcualte light direction
+            Light light = lights[l];
+            vec3
+            lightDirection = light.position - shadingPoint,
+            lightIntensity = light.color / dot(lightDirection, lightDirection);
+            lightDirection = normalize(lightDirection);
+            // Check for shadow
+            Ray shadowRay = Ray(shadingPoint, lightDirection, vec2(0.05, length(light.position - shadingPoint) - 0.1), 0, vec3(0.0), -1);
+            if (intersect_scene(shadowRay)) continue;
+            // Compute light response
+            accumulant += colorMask * lightIntensity * max(dot(-lightDirection, ray.intersectionNormal), 0.0);
+        }
         // Calculate an orthonormal frame at the shading point
         // We use this frame to orient our random point on the unit hemisphere
         vec3
@@ -152,6 +205,7 @@ vec3 radiance (Ray ray) { // INCOMPLETE
         ray.origin = shadingPoint + ray.intersectionNormal * 0.0001;
         ray.direction = normalize(normalFrame * hemispherePoint);
         ray.range = DEFAULT_RANGE; // Don't forget to reset the range
+        #endif
     }
     return accumulant;
 }
@@ -206,7 +260,7 @@ Ray generate_ray (const vec2 uv, const Camera camera) {
     vec3 planePoint = vec3((uv.x - 0.5) * WindowSize.x / WindowSize.y, uv.y - 0.5, planeZ);    
     vec4 worldPoint = camera.transform * vec4(planePoint, 1.0);
     vec3 direction = normalize(worldPoint.xyz - position);
-    return Ray(position, direction, DEFAULT_RANGE, 0, vec3(0.0), -1);
+    return Ray(position, direction, DEFAULT_RANGE, -1, vec3(0.0), -1);
 }
 
 vec3 generate_hemisphere_point (float random1, float random2) {
@@ -226,7 +280,7 @@ float rand (vec2 seed) {
     return fract(
         43758.5453 * sin(
             dot(
-                vec2(uv.x * 0.2294 + seed.x + 0.42323 * frameCount, seed.y + uv.y * 0.245 + 0.71223 * frameCount),
+                vec2(seed.x + uv.x * 0.2294 + 0.42323 * frameCount, seed.y + uv.y * 0.245 + 0.71223 * frameCount),
                 vec2(12.9898, 78.233)
             )
         )
